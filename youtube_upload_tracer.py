@@ -8,6 +8,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
 
 # Full YouTube scope required for upload + duplicate detection (search/read)
 SCOPES = ["https://www.googleapis.com/auth/youtube"]
@@ -98,17 +99,8 @@ def compute_file_hash(path, chunk_size=1024 * 1024):
     return sha256.hexdigest()
 
 
-def video_already_uploaded(youtube, file_hash):
-    # Search your own channel for this hash tag
-    search_response = youtube.search().list(
-        part="snippet",
-        forMine=True,
-        type="video",
-        q=file_hash,
-        maxResults=5,
-    ).execute()
-
-    return len(search_response.get("items", [])) > 0
+# Duplicate detection via YouTube search disabled to preserve quota.
+# We now rely only on local log + move-to-uploaded behavior.
 
 
 def is_video_file(path):
@@ -151,10 +143,7 @@ if __name__ == "__main__":
         uploaded_dir = os.path.join(base_dir, "uploaded")
         os.makedirs(uploaded_dir, exist_ok=True)
 
-        if video_already_uploaded(youtube, file_hash):
-            print("Duplicate detected on YouTube (hash match). Moving to uploaded/.")
-            shutil.move(target_path, os.path.join(uploaded_dir, os.path.basename(target_path)))
-            sys.exit(0)
+        # Cloud duplicate detection disabled (quota-safe mode)
 
         response = upload_single_video(youtube, target_path)
         if response and "id" in response:
@@ -180,15 +169,24 @@ if __name__ == "__main__":
                 try:
                     file_hash = compute_file_hash(full_path)
 
-                    if video_already_uploaded(youtube, file_hash):
-                        print(f"Duplicate detected on YouTube (hash match). Moving: {full_path}")
-                        shutil.move(full_path, os.path.join(uploaded_dir, os.path.basename(full_path)))
-                        continue
+                    # Cloud duplicate detection disabled (quota-safe mode)
 
                     response = upload_single_video(youtube, full_path)
                     if response and "id" in response:
                         append_uploaded_log(upload_log, full_path, response["id"])
-                        # Move to uploaded/ at top-level target folder
                         shutil.move(full_path, os.path.join(uploaded_dir, os.path.basename(full_path)))
+
+                except HttpError as e:
+                    if e.resp.status == 429:
+                        print("\nQuota exceeded (HTTP 429).")
+                        answer = input("Quota hit. Continue anyway? (y/N): ").strip().lower()
+                        if answer != "y":
+                            print("Stopping due to quota limit.")
+                            sys.exit(1)
+                        else:
+                            print("Continuing despite quota warning...\n")
+                            continue
+                    else:
+                        print(f"HTTP error for {full_path}: {e}")
                 except Exception as e:
                     print(f"Error uploading {full_path}: {e}")
