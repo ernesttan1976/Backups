@@ -66,8 +66,17 @@ Prompt:
 
 Which year to process?
 
-Navigate to that year in Google Photos.
-Apply filter: Videos only.
+Navigation must use direct URL pattern (no scrolling):
+
+Videos-only year view:
+
+https://photos.google.com/search/_tra_/<YEAR>
+
+Where <YEAR> is the selected year (e.g., 2020).
+
+Do NOT rely on timeline scrolling or lazy loading to reach older years.
+Do NOT use generic search-only view without media-type filter.
+Always use the direct videos-year URL.
 
 
 # Phase 3 – Queue Mode Selection
@@ -79,13 +88,14 @@ Queue mode:
 2. Auto-queue entire year
 
 If Auto:
-- Scroll full year
+- Enumerate all video entries visible in the year view
+- If pagination/lazy loading occurs, use incremental scrolling within the YEAR page only
 - Collect all video entries
 - Build queue
 
 If Manual:
-- Scroll full year
-- Enumerate videos
+- Enumerate all video entries visible in the year view
+- If pagination/lazy loading occurs, scroll within the YEAR page only
 - Present numbered list
 - Allow selection via numbers, ranges, comma-separated
 - Build queue from selection
