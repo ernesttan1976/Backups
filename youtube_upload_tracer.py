@@ -1,6 +1,8 @@
 import os
 import sys
 import pprint
+import hashlib
+import shutil
 import google.auth.transport.requests
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -37,6 +39,7 @@ def get_authenticated_service():
 
 def upload_single_video(youtube, file_path):
     title = os.path.splitext(os.path.basename(file_path))[0]
+    file_hash = compute_file_hash(file_path)
 
     print(f"Preparing upload: {file_path}")
     print(f"Title: {title}")
@@ -52,8 +55,9 @@ def upload_single_video(youtube, file_path):
         body={
             "snippet": {
                 "title": title,
-                "description": "Tracer test upload",
+                "description": f"Tracer test upload\n\nSOURCE_HASH:{file_hash}",
                 "categoryId": "22",
+                "tags": [f"source_hash:{file_hash}"],
             },
             "status": {
                 "privacyStatus": "private"
@@ -80,6 +84,30 @@ def upload_single_video(youtube, file_path):
     print("\nFull API response:")
     pprint.pprint(response)
     return response
+
+
+def compute_file_hash(path, chunk_size=1024 * 1024):
+    sha256 = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            data = f.read(chunk_size)
+            if not data:
+                break
+            sha256.update(data)
+    return sha256.hexdigest()
+
+
+def video_already_uploaded(youtube, file_hash):
+    # Search your own channel for this hash tag
+    search_response = youtube.search().list(
+        part="snippet",
+        forMine=True,
+        type="video",
+        q=file_hash,
+        maxResults=5,
+    ).execute()
+
+    return len(search_response.get("items", [])) > 0
 
 
 def is_video_file(path):
@@ -116,14 +144,30 @@ if __name__ == "__main__":
     uploaded_paths = {entry.split("|")[0] for entry in uploaded_entries}
 
     if os.path.isfile(target_path):
-        if target_path in uploaded_paths:
-            print("Already uploaded. Skipping.")
+        file_hash = compute_file_hash(target_path)
+
+        base_dir = os.path.dirname(target_path)
+        uploaded_dir = os.path.join(base_dir, "uploaded")
+        os.makedirs(uploaded_dir, exist_ok=True)
+
+        if video_already_uploaded(youtube, file_hash):
+            print("Duplicate detected on YouTube (hash match). Moving to uploaded/.")
+            shutil.move(target_path, os.path.join(uploaded_dir, os.path.basename(target_path)))
             sys.exit(0)
+
         response = upload_single_video(youtube, target_path)
         if response and "id" in response:
             append_uploaded_log(upload_log, target_path, response["id"])
+            # Move to uploaded/ subfolder
+            base_dir = os.path.dirname(target_path)
+            uploaded_dir = os.path.join(base_dir, "uploaded")
+            os.makedirs(uploaded_dir, exist_ok=True)
+            shutil.move(target_path, os.path.join(uploaded_dir, os.path.basename(target_path)))
 
     elif os.path.isdir(target_path):
+        base_dir = target_path
+        uploaded_dir = os.path.join(base_dir, "uploaded")
+        os.makedirs(uploaded_dir, exist_ok=True)
         for root, _, files in os.walk(target_path):
             for name in files:
                 full_path = os.path.join(root, name)
@@ -133,8 +177,17 @@ if __name__ == "__main__":
                     print(f"Skipping already uploaded: {full_path}")
                     continue
                 try:
+                    file_hash = compute_file_hash(full_path)
+
+                    if video_already_uploaded(youtube, file_hash):
+                        print(f"Duplicate detected on YouTube (hash match). Moving: {full_path}")
+                        shutil.move(full_path, os.path.join(uploaded_dir, os.path.basename(full_path)))
+                        continue
+
                     response = upload_single_video(youtube, full_path)
                     if response and "id" in response:
                         append_uploaded_log(upload_log, full_path, response["id"])
+                        # Move to uploaded/ at top-level target folder
+                        shutil.move(full_path, os.path.join(uploaded_dir, os.path.basename(full_path)))
                 except Exception as e:
                     print(f"Error uploading {full_path}: {e}")
