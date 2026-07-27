@@ -23,44 +23,48 @@ All data is stored under a user-selected root folder.
 Authentication is NOT automated.
 
 
-# Phase 0 – Root Folder (Handled by Runner)
+# Phase 0 – Root Folder Selection
 
-Root folder validation and directory setup are handled entirely by the
-Python runner.
+Prompt user:
 
-Runner requirements:
+Enter root backup folder name (e.g., Ernest_Backups):
 
-- Root folder is required CLI argument
-- Must end with *_Backups (case-sensitive)
+Validation rules:
+
+- Must be relative path
+- Must NOT start with '/'
+- Must NOT contain '../'
 - ASCII characters only
-- If relative path: must NOT contain '../'
-- Nested relative paths allowed
-- Absolute paths allowed
-- Automatically create <root>/gphotos/ if missing
+- Nested paths allowed (e.g., Archives/Ernest_Backups)
 
-Resolved paths (computed by runner):
+Resolved base directory:
 
-Base directory:
-<root>/gphotos/
+./<root>/gphotos/
 
-State file:
-<root>/gphotos/archive_state.json
+If missing:
+Ask whether to create it.
+
+State file path:
+
+./<root>/gphotos/archive_state.json
 
 
 # Phase 1 – Resume Detection
 
-If archive_state.json exists, resume handling is performed inside the runner.
+If archive_state.json exists:
 
-Behavior:
+Offer:
 
-- Resume unfinished items automatically
-- Restart year only if --restart flag is provided
-- Abort if state is inconsistent
+1. Resume unfinished items
+2. Restart current year (reset items)
+3. Abort
 
 
 # Phase 2 – Year Selection
 
-Year is provided via CLI argument (--year).
+Prompt:
+
+Which year to process?
 
 Navigate to that year in Google Photos.
 Apply filter: Videos only.
@@ -68,7 +72,11 @@ Apply filter: Videos only.
 
 # Phase 3 – Queue Mode Selection
 
-Queue mode is provided via CLI argument (--mode manual|auto).
+Prompt:
+
+Queue mode:
+1. Manual selection
+2. Auto-queue entire year
 
 If Auto:
 - Scroll full year
