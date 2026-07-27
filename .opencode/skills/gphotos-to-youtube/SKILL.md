@@ -66,26 +66,17 @@ Prompt:
 
 Which year to process?
 
-Navigation must use the Google Photos search bar (NOT direct URL patterns).
+Navigation must use direct URL pattern (no scrolling):
 
-Search procedure:
+Videos-only year view:
 
-1. Snapshot the page.
-2. Locate the search input element:
-   - role="combobox"
-   - aria-label contains "Search your photos"
-   - Prefer selector: input[aria-label="Search your photos and albums"]
-3. If input is not focusable, click the search icon button first
-   (aria-label="Search your photos and albums").
-4. Clear any existing query.
-5. Type: "<YEAR> video" (example: "2020 video").
-6. Press Enter.
-7. Wait for results grid to render.
-8. Verify that returned items are videos (duration badge or video indicator present).
+https://photos.google.com/search/_tra_/<YEAR>
 
-Do NOT use the _tra_ direct URL pattern.
-Do NOT rely on timeline scrolling to reach older years.
-All year filtering must occur via search query.
+Where <YEAR> is the selected year (e.g., 2020).
+
+Do NOT rely on timeline scrolling or lazy loading to reach older years.
+Do NOT use generic search-only view without media-type filter.
+Always use the direct videos-year URL.
 
 
 # Phase 3 – Queue Mode Selection
