@@ -9,7 +9,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# Full YouTube scope required for upload + duplicate detection (search/read)
+SCOPES = ["https://www.googleapis.com/auth/youtube"]
 TOKEN_FILE = "token.json"
 
 
