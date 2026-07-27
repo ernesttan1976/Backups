@@ -23,64 +23,44 @@ All data is stored under a user-selected root folder.
 Authentication is NOT automated.
 
 
-# Phase 0 – Root Folder Selection
+# Phase 0 – Root Folder (Handled by Runner)
 
-Automatically scan the current working directory for folders matching:
+Root folder validation and directory setup are handled entirely by the
+Python runner.
 
-*_Backups
+Runner requirements:
 
-List them numerically:
-
-1. Ernest_Backups
-2. Family_Backups
-3. Archives_2024_Backups
-
-Prompt user:
-
-Select root folder number:
-
-Rules:
-
-- Only numeric selection allowed
-- Folder must already exist
-- Must be a directory
-- Name must match *_Backups exactly (case-sensitive)
-
-If no matching folders exist:
-
-Prompt user to manually enter a new folder name matching *_Backups
-Apply validation:
-
-- Must be relative path
-- Must NOT start with '/'
-- Must NOT contain '../'
+- Root folder is required CLI argument
+- Must end with *_Backups (case-sensitive)
 - ASCII characters only
+- If relative path: must NOT contain '../'
+- Nested relative paths allowed
+- Absolute paths allowed
+- Automatically create <root>/gphotos/ if missing
 
-Resolved base directory:
+Resolved paths (computed by runner):
 
-./<selected_folder>/gphotos/
+Base directory:
+<root>/gphotos/
 
-State file path:
-
-./<selected_folder>/gphotos/archive_state.json
+State file:
+<root>/gphotos/archive_state.json
 
 
 # Phase 1 – Resume Detection
 
-If archive_state.json exists:
+If archive_state.json exists, resume handling is performed inside the runner.
 
-Offer:
+Behavior:
 
-1. Resume unfinished items
-2. Restart current year (reset items)
-3. Abort
+- Resume unfinished items automatically
+- Restart year only if --restart flag is provided
+- Abort if state is inconsistent
 
 
 # Phase 2 – Year Selection
 
-Prompt:
-
-Which year to process?
+Year is provided via CLI argument (--year).
 
 Navigate to that year in Google Photos.
 Apply filter: Videos only.
@@ -88,11 +68,7 @@ Apply filter: Videos only.
 
 # Phase 3 – Queue Mode Selection
 
-Prompt:
-
-Queue mode:
-1. Manual selection
-2. Auto-queue entire year
+Queue mode is provided via CLI argument (--mode manual|auto).
 
 If Auto:
 - Scroll full year
