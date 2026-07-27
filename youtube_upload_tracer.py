@@ -3,6 +3,8 @@ import sys
 import pprint
 import hashlib
 import shutil
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import google.auth.transport.requests
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -179,6 +181,18 @@ if __name__ == "__main__":
                 except HttpError as e:
                     if e.resp.status == 429:
                         print("\nQuota exceeded (HTTP 429).")
+                        # YouTube Data API quota resets at midnight Pacific Time
+                        now_pt = datetime.now(ZoneInfo("America/Los_Angeles"))
+                        tomorrow_midnight_pt = (now_pt + timedelta(days=1)).replace(
+                            hour=0, minute=0, second=0, microsecond=0
+                        )
+                        # Convert reset time to local timezone
+                        local_tz = datetime.now().astimezone().tzinfo
+                        reset_local = tomorrow_midnight_pt.astimezone(local_tz)
+                        print(
+                            "Quota resets at (your local time):",
+                            reset_local.strftime("%Y-%m-%d %H:%M:%S %Z"),
+                        )
                         answer = input("Quota hit. Continue anyway? (y/N): ").strip().lower()
                         if answer != "y":
                             print("Stopping due to quota limit.")
