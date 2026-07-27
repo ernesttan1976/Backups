@@ -25,28 +25,44 @@ Authentication is NOT automated.
 
 # Phase 0 – Root Folder Selection
 
+Automatically scan the current working directory for folders matching:
+
+*_Backups
+
+List them numerically:
+
+1. Ernest_Backups
+2. Family_Backups
+3. Archives_2024_Backups
+
 Prompt user:
 
-Enter root backup folder name (e.g., Ernest_Backups):
+Select root folder number:
 
-Validation rules:
+Rules:
+
+- Only numeric selection allowed
+- Folder must already exist
+- Must be a directory
+- Name must match *_Backups exactly (case-sensitive)
+
+If no matching folders exist:
+
+Prompt user to manually enter a new folder name matching *_Backups
+Apply validation:
 
 - Must be relative path
 - Must NOT start with '/'
 - Must NOT contain '../'
 - ASCII characters only
-- Nested paths allowed (e.g., Archives/Ernest_Backups)
 
 Resolved base directory:
 
-./<root>/gphotos/
-
-If missing:
-Ask whether to create it.
+./<selected_folder>/gphotos/
 
 State file path:
 
-./<root>/gphotos/archive_state.json
+./<selected_folder>/gphotos/archive_state.json
 
 
 # Phase 1 – Resume Detection
